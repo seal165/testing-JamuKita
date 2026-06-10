@@ -1,0 +1,21 @@
+.container {
+  max-width: 400px;
+  margin: auto;
+  padding: 20px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.button {
+  background: #B6771D;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  width: 100%;
+  font-weight: bold;
+}

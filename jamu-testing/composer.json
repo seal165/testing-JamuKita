@@ -1,0 +1,22 @@
+{
+  "name": "eolia/jamu-testing",
+  "description": "PHPUnit testing Jamu Kita API",
+  "authors": [
+    {
+      "name": "seal165",
+      "email": "eoliasuwandi@gmail.com"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "guzzlehttp/guzzle": "^7.10"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  }
+}

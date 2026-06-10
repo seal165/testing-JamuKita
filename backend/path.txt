@@ -1,0 +1,20 @@
+GoRent/
+├── src/
+│   ├── routes/            # File routing Express
+│   ├── controllers/       # Fungsi-fungsi untuk menangani request
+│   ├── models/            # Logika bisnis dan interaksi dengan database
+│   ├── middlewares/       # Middleware auth, logger, errorHandler
+│   ├── utils/             # Helper functions (misal: hash, JWT, dll)
+│   ├── validators/        # Validasi input menggunakan Joi
+│   ├── routes.js          # Definisi semua route
+│   ├── app.js             # Setup Express, middlewares, routes
+│   └── server.js          # Entry point (jalankan app.listen)
+├── prisma/                # Skema Prisma dan migrasi
+│   ├── schema.prisma      # Skema Prisma
+│   └── migrations/        # Folder migrasi Prisma
+├── .gitignore             # File yang diabaikan Git
+├── README.md              # Dokumentasi proyek
+├── package.json           # Dependensi dan skrip npm
+├── tests/                 # Unit tests dan integration tests
+├── .env                   # Variabel lingkungan
+└── package.json           # Dependensi dan skrip npm

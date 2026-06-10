@@ -1,0 +1,63 @@
+{
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.955.0",
+    "@prisma/client": "^6.8.2",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^11.1.0"
+  },
+  "name": "jamu-kita-api",
+  "version": "1.0.0",
+  "description": "Backend API untuk platform resep jamu tradisional Indonesia - Jamu Kita",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "generate-jwt": "node generator/generateJWT.js",
+    "dev": "node src/server.js --watch",
+    "test": "set NODE_ENV=test && mocha --require tests/setup.js",
+    "test:watch": "set NODE_ENV=test && mocha --watch --require ./tests/setup.js",
+    "test:coverage": "set NODE_ENV=test && nyc mocha --require ./tests/setup.js",
+    "test:sqlite": "set DATABASE_URL=file:./dev-test.db && npm run test:watch",
+    "db:test:setup": "npx prisma db push --skip-generate --schema=./prisma/schema.test.prisma"
+  },
+  "prisma": {
+    "seed": "node prisma/seed/seed.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/Jamu-Kita.git"
+  },
+  "keywords": [
+    "expressjs",
+    "nodejs",
+    "prisma",
+    "jamu",
+    "herbal",
+    "resep",
+    "traditional-medicine",
+    "indonesia"
+  ],
+  "author": "Jamu Kita Team",
+  "license": "SEE LICENSE IN LICENSE",
+  "bugs": {
+    "url": "https://github.com/yourusername/Jamu-Kita/issues"
+  },
+  "homepage": "https://github.com/yourusername/Jamu-Kita#readme",
+  "devDependencies": {
+    "chai": "^5.3.3",
+    "chai-http": "^5.1.2",
+    "clone": "^2.1.2",
+    "mocha": "^11.7.4",
+    "mocha-suppress-logs": "^0.5.1",
+    "prisma": "^6.8.2",
+    "supertest": "^7.1.4"
+  },
+  "type": "module"
+}

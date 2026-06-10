@@ -1,0 +1,54 @@
+/* Panel/soft frame agar area hero tampak seperti “bidang blur” membentang */
+.softFrame {
+  position: absolute;
+  left: 50%;
+  top: 50px; /* beri jarak dari atas */
+  transform: translateX(-50%);
+  width: min(1200px, 96vw);
+  height: clamp(260px, 42vw, 480px);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* Radial glow di atas frame agar center lebih terang */
+.radial {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.34) 0%,
+    rgba(255, 255, 255, 0.18) 38%,
+    rgba(255, 255, 255, 0) 75%
+  );
+}
+
+/* Pusatkan hero di belakang form */
+.heroCenter {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(1400px, 100vw);
+  height: 90dvh;
+  transform: translate(-50%, -50%);
+}
+
+/* Container relative untuk Next/Image fill + pengaturan blur/opacity agar lebih terlihat */
+.heroWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  opacity: 0.75;    /* lebih jelas */
+  filter: blur(8px); /* blur ringan agar objek masih terbaca */
+}
+
+/* Vignette tipis untuk melembutkan tepi hero */
+.vignette {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.08) 100%);
+}

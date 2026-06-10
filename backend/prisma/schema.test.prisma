@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  nama      String
+  email     String    @unique
+  password  String
+  role      String    @default("anggota") // UserRole enum
+  createdAt DateTime  @default(now())
+  userToken String?
+  komentar  Komentar[]
+  favorit   Favorit[]
+}
+
+model Kategori {
+  id    Int     @id @default(autoincrement())
+  nama  String  @unique
+  resep Resep[]
+}
+
+model Resep {
+  id                String     @id @default(uuid())
+  judul             String
+  deskripsi         String
+  gambarURL         String?
+  sumberLiteratur   String?
+  kategoriId        Int
+  bahan             String     // JSON string
+  langkahPembuatan  String     // JSON string
+  createdAt         DateTime   @default(now())
+  kategori          Kategori   @relation(fields: [kategoriId], references: [id], onDelete: Cascade)
+  komentar          Komentar[]
+  favorit           Favorit[]
+}
+
+model Komentar {
+  id             Int      @id @default(autoincrement())
+  isiKomentar    String
+  rating         Int
+  tanggalPosting DateTime @default(now())
+  userId         Int
+  resepId        String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resep          Resep    @relation(fields: [resepId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resepId])
+}
+
+model Favorit {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int
+  resepId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resep     Resep    @relation(fields: [resepId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resepId])
+}

@@ -1,0 +1,3345 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Jamu Kita API",
+    "description": "API RESTful untuk sistem 'Jamu Kita' - platform resep jamu tradisional Indonesia. API ini menyediakan endpoint untuk manajemen resep, komentar, rating, dan fitur favorit.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Jamu Kita Team",
+      "email": "support@jamukita.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/v1",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.jamukita.com/v1",
+      "description": "Production server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Masukkan token JWT dengan format: Bearer <token>"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "nama": {
+            "type": "string",
+            "example": "Budi Hartono"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "budi@example.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["anggota", "admin"],
+            "example": "anggota"
+          }
+        }
+      },
+      "Kategori": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "nama": {
+            "type": "string",
+            "example": "Pegal Linu"
+          }
+        }
+      },
+      "ResepSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "resep-123"
+          },
+          "judul": {
+            "type": "string",
+            "example": "Jamu Beras Kencur"
+          },
+          "deskripsi": {
+            "type": "string",
+            "example": "Minuman penyegar tubuh yang berkhasiat mengatasi pegal linu"
+          },
+          "gambarURL": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://api.jamukita.com/images/beras-kencur.jpg"
+          },
+          "kategori": {
+            "$ref": "#/components/schemas/Kategori"
+          },
+          "rataRataRating": {
+            "type": "number",
+            "format": "float",
+            "example": 4.5
+          }
+        }
+      },
+      "ResepDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResepSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "sumberLiteratur": {
+                "type": "string",
+                "nullable": true,
+                "example": "Buku Resep Herbal Warisan, Hal. 12"
+              },
+              "bahan": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": ["Beras 100gr", "Kencur 50gr", "Gula Merah secukupnya"]
+              },
+              "langkahPembuatan": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": ["1. Cuci bersih beras", "2. Tumbuk kencur", "3. Rebus semua bahan"]
+              }
+            }
+          }
+        ]
+      },
+      "Komentar": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "isiKomentar": {
+            "type": "string",
+            "example": "Jamu ini manjur sekali!"
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "example": 5
+          },
+          "tanggalPosting": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-10-18T10:30:00Z"
+          },
+          "pengguna": {
+            "type": "object",
+            "properties": {
+              "nama": {
+                "type": "string",
+                "example": "Budi Hartono"
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "Terjadi kesalahan"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["Detail error"]
+          }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Autentikasi gagal - Token tidak ada, salah, atau kedaluwarsa",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "message": "Token tidak valid atau sudah kedaluwarsa"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Akses ditolak - User tidak memiliki hak akses",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "message": "Akses ditolak. Hanya admin yang dapat mengakses endpoint ini"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Sumber daya tidak ditemukan",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "message": "Resep tidak ditemukan"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Permintaan tidak valid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "message": "Validasi gagal",
+              "errors": ["Judul resep wajib diisi"]
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Endpoint autentikasi (Register, Login, Logout)"
+    },
+    {
+      "name": "Resep",
+      "description": "Endpoint publik untuk resep"
+    },
+    {
+      "name": "Kategori",
+      "description": "Endpoint publik untuk kategori resep"
+    },
+    {
+      "name": "Komentar",
+      "description": "Endpoint untuk komentar dan rating"
+    },
+    {
+      "name": "Favorit",
+      "description": "Endpoint untuk mengelola resep favorit (Anggota)"
+    },
+    {
+      "name": "Admin - Resep",
+      "description": "Endpoint admin untuk manajemen resep"
+    },
+    {
+      "name": "Admin - Pengguna",
+      "description": "Endpoint admin untuk manajemen pengguna"
+    },
+    {
+      "name": "Profile",
+      "description": "Endpoint untuk manajemen profil pengguna"
+    },
+    {
+      "name": "Recent Search",
+      "description": "Endpoint untuk mengelola riwayat pencarian (Anggota)"
+    },
+    {
+      "name": "Analytics",
+      "description": "Endpoint untuk analytics dan statistik"
+    },
+    {
+      "name": "Report",
+      "description": "Endpoint untuk melaporkan pengguna"
+    },
+    {
+      "name": "Artikel",
+      "description": "Endpoint untuk artikel edukatif"
+    },
+    {
+      "name": "Upload",
+      "description": "Endpoint untuk upload gambar (Admin)"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Registrasi akun Anggota baru",
+        "description": "Endpoint untuk mendaftarkan akun Anggota baru. Email harus unik.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nama", "email", "password"],
+                "properties": {
+                  "nama": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100,
+                    "example": "Budi Hartono"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "budi@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "password123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registrasi berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Registrasi berhasil"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        },
+                        "access_token": {
+                          "type": "string",
+                          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login untuk Anggota dan Admin",
+        "description": "Endpoint untuk login. Mengembalikan JWT token yang harus disertakan dalam header Authorization untuk endpoint yang memerlukan autentikasi.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "budi@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "password123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Login berhasil"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        },
+                        "access_token": {
+                          "type": "string",
+                          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout (invalidate token)",
+        "description": "Menghapus token dari database sehingga token tidak dapat digunakan lagi.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Logout berhasil"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/resep": {
+      "get": {
+        "tags": ["Resep"],
+        "summary": "Mendapatkan daftar semua resep",
+        "description": "Endpoint publik untuk mendapatkan daftar resep. Mendukung filter pencarian dan kategori.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Kata kunci pencarian (judul atau deskripsi)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "beras kencur"
+            }
+          },
+          {
+            "name": "kategori",
+            "in": "query",
+            "description": "Filter berdasarkan nama kategori",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "Pegal Linu"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Nomor halaman",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Jumlah item per halaman",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "example": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar resep berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan daftar resep"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ResepSummary"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "total": {
+                          "type": "integer",
+                          "example": 25
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "example": 3
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resep/top/weekly": {
+      "get": {
+        "tags": ["Resep"],
+        "summary": "Mendapatkan Top 7 resep minggu ini",
+        "description": "Endpoint publik untuk mendapatkan 7 resep dengan rating tertinggi dalam minggu ini. Diurutkan berdasarkan rata-rata rating tertinggi.",
+        "responses": {
+          "200": {
+            "description": "Top 7 resep berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan top 7 resep minggu ini"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ResepSummary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resep/search": {
+      "get": {
+        "tags": ["Resep"],
+        "summary": "Pencarian resep lanjutan (Advanced Search)",
+        "description": "Endpoint publik untuk pencarian resep dengan berbagai filter: keyword, kategori, rating minimal, dan sorting. Keyword akan mencari di judul, deskripsi, bahan, langkah pembuatan, dan sumber literatur.",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "Kata kunci pencarian (minimal 2 karakter). Mencari di: judul, deskripsi, bahan, langkah pembuatan, sumber literatur",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "example": "jahe"
+            }
+          },
+          {
+            "name": "kategoriId",
+            "in": "query",
+            "description": "Filter berdasarkan ID kategori",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          },
+          {
+            "name": "minRating",
+            "in": "query",
+            "description": "Rating minimal (0-5)",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5,
+              "example": 4.0
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Urutan berdasarkan: createdAt (tanggal dibuat), rating (rating rata-rata), judul (nama resep)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["createdAt", "rating", "judul"],
+              "default": "createdAt",
+              "example": "rating"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "description": "Urutan: asc (naik) atau desc (turun)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"],
+              "default": "desc",
+              "example": "desc"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Nomor halaman",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Jumlah item per halaman",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "example": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pencarian berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil melakukan pencarian resep"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ResepSummary"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "total": {
+                          "type": "integer",
+                          "example": 15
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "example": 2
+                        }
+                      }
+                    },
+                    "filters": {
+                      "type": "object",
+                      "properties": {
+                        "keyword": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": "jahe"
+                        },
+                        "kategoriId": {
+                          "type": "integer",
+                          "nullable": true,
+                          "example": 1
+                        },
+                        "minRating": {
+                          "type": "number",
+                          "nullable": true,
+                          "example": 4.0
+                        },
+                        "sortBy": {
+                          "type": "string",
+                          "example": "rating"
+                        },
+                        "sortOrder": {
+                          "type": "string",
+                          "example": "desc"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "searchByKeyword": {
+                    "summary": "Pencarian dengan keyword",
+                    "value": {
+                      "success": true,
+                      "message": "Berhasil melakukan pencarian resep",
+                      "data": [
+                        {
+                          "id": "resep-123",
+                          "judul": "Wedang Jahe",
+                          "deskripsi": "Minuman hangat berbahan dasar jahe...",
+                          "gambarURL": "https://example.com/jahe.jpg",
+                          "kategori": {
+                            "id": 2,
+                            "nama": "Flu & Batuk"
+                          },
+                          "rataRataRating": 4.8
+                        }
+                      ],
+                      "pagination": {
+                        "page": 1,
+                        "limit": 10,
+                        "total": 1,
+                        "totalPages": 1
+                      },
+                      "filters": {
+                        "keyword": "jahe",
+                        "kategoriId": null,
+                        "minRating": null,
+                        "sortBy": "createdAt",
+                        "sortOrder": "desc"
+                      }
+                    }
+                  },
+                  "searchWithFilters": {
+                    "summary": "Pencarian dengan multiple filter",
+                    "value": {
+                      "success": true,
+                      "message": "Berhasil melakukan pencarian resep",
+                      "data": [
+                        {
+                          "id": "resep-456",
+                          "judul": "Jamu Kunyit Asam",
+                          "deskripsi": "Jamu tradisional untuk kesehatan wanita...",
+                          "gambarURL": "https://example.com/kunyit.jpg",
+                          "kategori": {
+                            "id": 5,
+                            "nama": "Kesehatan Wanita"
+                          },
+                          "rataRataRating": 4.5
+                        }
+                      ],
+                      "pagination": {
+                        "page": 1,
+                        "limit": 10,
+                        "total": 1,
+                        "totalPages": 1
+                      },
+                      "filters": {
+                        "keyword": "kunyit",
+                        "kategoriId": 5,
+                        "minRating": 4.0,
+                        "sortBy": "rating",
+                        "sortOrder": "desc"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/resep/{id}": {
+      "get": {
+        "tags": ["Resep"],
+        "summary": "Mendapatkan detail resep",
+        "description": "Endpoint publik untuk mendapatkan detail lengkap satu resep berdasarkan ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID resep",
+            "schema": {
+              "type": "string",
+              "example": "resep-123"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail resep berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan detail resep"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ResepDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/kategori": {
+      "get": {
+        "tags": ["Kategori"],
+        "summary": "Mendapatkan daftar semua kategori",
+        "description": "Endpoint publik untuk mendapatkan daftar semua kategori resep.",
+        "responses": {
+          "200": {
+            "description": "Daftar kategori berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan daftar kategori"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Kategori"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resep/{id}/komentar": {
+      "get": {
+        "tags": ["Komentar"],
+        "summary": "Mendapatkan semua komentar untuk resep",
+        "description": "Endpoint publik untuk mendapatkan semua komentar dan rating untuk resep tertentu.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID resep",
+            "schema": {
+              "type": "string",
+              "example": "resep-123"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar komentar berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan daftar komentar"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Komentar"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Komentar"],
+        "summary": "Menambahkan komentar dan rating",
+        "description": "Endpoint untuk menambahkan komentar dan rating ke resep. Memerlukan autentikasi sebagai Anggota. Satu user hanya dapat memberikan satu komentar per resep.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID resep",
+            "schema": {
+              "type": "string",
+              "example": "resep-123"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["isiKomentar", "rating"],
+                "properties": {
+                  "isiKomentar": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 1000,
+                    "example": "Jamu ini manjur sekali untuk mengatasi pegal linu!"
+                  },
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "example": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Komentar berhasil ditambahkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Komentar berhasil ditambahkan"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Komentar"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/favorit": {
+      "get": {
+        "tags": ["Favorit"],
+        "summary": "Mendapatkan daftar resep favorit",
+        "description": "Mendapatkan daftar semua resep yang ditandai sebagai favorit oleh user yang sedang login.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar favorit berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan daftar resep favorit"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ResepSummary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Favorit"],
+        "summary": "Menambahkan resep ke favorit",
+        "description": "Menambahkan resep ke daftar favorit user yang sedang login.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["resepId"],
+                "properties": {
+                  "resepId": {
+                    "type": "string",
+                    "example": "resep-123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Resep berhasil ditambahkan ke favorit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Resep berhasil ditambahkan ke favorit"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/favorit/{resep_id}": {
+      "delete": {
+        "tags": ["Favorit"],
+        "summary": "Menghapus resep dari favorit",
+        "description": "Menghapus resep dari daftar favorit user yang sedang login.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "resep_id",
+            "in": "path",
+            "required": true,
+            "description": "ID resep yang akan dihapus dari favorit",
+            "schema": {
+              "type": "string",
+              "example": "resep-123"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resep berhasil dihapus dari favorit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Resep berhasil dihapus dari favorit"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/admin/resep": {
+      "post": {
+        "tags": ["Admin - Resep"],
+        "summary": "Menambahkan resep baru (Admin)",
+        "description": "Endpoint untuk admin menambahkan resep baru ke sistem.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["judul", "deskripsi", "kategoriId", "bahan", "langkahPembuatan"],
+                "properties": {
+                  "judul": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 255,
+                    "example": "Jamu Beras Kencur"
+                  },
+                  "deskripsi": {
+                    "type": "string",
+                    "minLength": 10,
+                    "example": "Minuman penyegar tubuh yang berkhasiat mengatasi pegal linu"
+                  },
+                  "gambarURL": {
+                    "type": "string",
+                    "format": "uri",
+                    "nullable": true,
+                    "example": "https://api.jamukita.com/images/beras-kencur.jpg"
+                  },
+                  "sumberLiteratur": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "Buku Resep Herbal Warisan, Hal. 12"
+                  },
+                  "kategoriId": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "bahan": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "example": ["Beras 100gr", "Kencur 50gr", "Gula Merah secukupnya"]
+                  },
+                  "langkahPembuatan": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "example": ["1. Cuci bersih beras", "2. Tumbuk kencur", "3. Rebus semua bahan"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Resep berhasil ditambahkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Resep berhasil ditambahkan"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "resep-123"
+                        },
+                        "judul": {
+                          "type": "string",
+                          "example": "Jamu Beras Kencur"
+                        },
+                        "deskripsi": {
+                          "type": "string",
+                          "example": "Minuman penyegar tubuh..."
+                        },
+                        "gambarURL": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "kategori": {
+                          "$ref": "#/components/schemas/Kategori"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/admin/resep/{id}": {
+      "put": {
+        "tags": ["Admin - Resep"],
+        "summary": "Memperbarui resep (Admin)",
+        "description": "Endpoint untuk admin memperbarui data resep yang sudah ada.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID resep yang akan diupdate",
+            "schema": {
+              "type": "string",
+              "example": "resep-123"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                  "judul": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 255
+                  },
+                  "deskripsi": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "gambarURL": {
+                    "type": "string",
+                    "format": "uri",
+                    "nullable": true
+                  },
+                  "sumberLiteratur": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "kategoriId": {
+                    "type": "integer"
+                  },
+                  "bahan": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1
+                  },
+                  "langkahPembuatan": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resep berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Resep berhasil diperbarui"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "judul": {
+                          "type": "string"
+                        },
+                        "deskripsi": {
+                          "type": "string"
+                        },
+                        "gambarURL": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "kategori": {
+                          "$ref": "#/components/schemas/Kategori"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin - Resep"],
+        "summary": "Menghapus resep (Admin)",
+        "description": "Endpoint untuk admin menghapus resep dari sistem. Semua komentar dan favorit terkait akan ikut terhapus.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID resep yang akan dihapus",
+            "schema": {
+              "type": "string",
+              "example": "resep-123"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resep berhasil dihapus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Resep berhasil dihapus"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/admin/pengguna": {
+      "get": {
+        "tags": ["Admin - Pengguna"],
+        "summary": "Mendapatkan daftar semua Anggota (Admin)",
+        "description": "Endpoint untuk admin melihat daftar semua pengguna dengan role Anggota.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar pengguna berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan daftar pengguna"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2025-10-01T10:00:00Z"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/admin/pengguna/{id}": {
+      "delete": {
+        "tags": ["Admin - Pengguna"],
+        "summary": "Menghapus akun Anggota (Admin)",
+        "description": "Endpoint untuk admin menghapus (memblokir) akun Anggota. Admin tidak dapat menghapus akun admin lain atau akun sendiri.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID pengguna yang akan dihapus",
+            "schema": {
+              "type": "integer",
+              "example": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pengguna berhasil dihapus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Pengguna berhasil dihapus"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Tidak dapat menghapus akun sendiri",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Tidak dapat menghapus akun sendiri"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Tidak dapat menghapus admin lain",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Tidak dapat menghapus akun admin lain"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Mendapatkan profil pengguna yang sedang login",
+        "description": "Endpoint untuk mendapatkan informasi lengkap profil pengguna yang sedang login.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profil berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan profil"
+                    },
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/User"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "example": "2025-10-01T10:00:00Z"
+                            },
+                            "totalKomentar": {
+                              "type": "integer",
+                              "example": 15
+                            },
+                            "totalFavorit": {
+                              "type": "integer",
+                              "example": 10
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Profile"],
+        "summary": "Memperbarui profil pengguna yang sedang login",
+        "description": "Endpoint untuk memperbarui informasi profil pengguna yang sedang login. Hanya field yang dikirim yang akan diperbarui.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                  "nama": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100,
+                    "example": "Budi Hartono Updated"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "budi.updated@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "newpassword123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profil berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Profil berhasil diperbarui"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/me/activity": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Mendapatkan riwayat aktivitas pengguna",
+        "description": "Endpoint untuk mendapatkan riwayat aktivitas pengguna yang sedang login, termasuk komentar dan resep favorit.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aktivitas berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan riwayat aktivitas"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "komentar": {
+                          "type": "array",
+                          "items": {
+                            "allOf": [
+                              {
+                                "$ref": "#/components/schemas/Komentar"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "resep": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "judul": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "favorit": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ResepSummary"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/me/{userId}": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Mendapatkan profil publik pengguna lain",
+        "description": "Endpoint publik untuk melihat profil pengguna lain berdasarkan ID.",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "ID pengguna",
+            "schema": {
+              "type": "integer",
+              "example": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profil publik berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan profil pengguna"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 5
+                        },
+                        "nama": {
+                          "type": "string",
+                          "example": "Budi Hartono"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2025-10-01T10:00:00Z"
+                        },
+                        "totalKomentar": {
+                          "type": "integer",
+                          "example": 15
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/recent-search": {
+      "get": {
+        "tags": ["Recent Search"],
+        "summary": "Mendapatkan riwayat pencarian pengguna",
+        "description": "Endpoint untuk mendapatkan daftar riwayat pencarian pengguna yang sedang login.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Riwayat pencarian berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan riwayat pencarian"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "query": {
+                            "type": "string",
+                            "example": "jahe"
+                          },
+                          "resultCount": {
+                            "type": "integer",
+                            "example": 5
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2025-10-18T10:30:00Z"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Recent Search"],
+        "summary": "Menyimpan pencarian baru",
+        "description": "Endpoint untuk menyimpan pencarian pengguna ke riwayat.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["query"],
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "example": "jahe"
+                  },
+                  "resultCount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pencarian berhasil disimpan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Pencarian berhasil disimpan"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Recent Search"],
+        "summary": "Menghapus semua riwayat pencarian",
+        "description": "Endpoint untuk menghapus semua riwayat pencarian pengguna yang sedang login.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Semua riwayat pencarian berhasil dihapus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Semua riwayat pencarian berhasil dihapus"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/recent-search/{id}": {
+      "delete": {
+        "tags": ["Recent Search"],
+        "summary": "Menghapus satu riwayat pencarian",
+        "description": "Endpoint untuk menghapus satu riwayat pencarian berdasarkan ID.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID riwayat pencarian",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Riwayat pencarian berhasil dihapus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Riwayat pencarian berhasil dihapus"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/analytics/log": {
+      "post": {
+        "tags": ["Analytics"],
+        "summary": "Mencatat event analytics",
+        "description": "Endpoint publik untuk mencatat berbagai event analytics seperti page view, search, recipe view, dll.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["eventType"],
+                "properties": {
+                  "eventType": {
+                    "type": "string",
+                    "enum": ["page_view", "search", "recipe_view", "category_view", "article_view"],
+                    "example": "recipe_view"
+                  },
+                  "eventData": {
+                    "type": "object",
+                    "description": "Data tambahan terkait event (berbentuk JSON object)",
+                    "example": {
+                      "recipeId": "resep-123",
+                      "recipeTitle": "Jamu Beras Kencur"
+                    }
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "example": "session-abc123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Event berhasil dicatat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Event berhasil dicatat"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/analytics/statistics": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Mendapatkan statistik analytics (Admin)",
+        "description": "Endpoint untuk admin mendapatkan statistik analytics seperti total views, searches, popular recipes, dll.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Tanggal mulai (ISO 8601 format)",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2025-10-01"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Tanggal akhir (ISO 8601 format)",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2025-10-31"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistik berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan statistik"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalPageViews": {
+                          "type": "integer",
+                          "example": 1500
+                        },
+                        "totalSearches": {
+                          "type": "integer",
+                          "example": 300
+                        },
+                        "totalRecipeViews": {
+                          "type": "integer",
+                          "example": 800
+                        },
+                        "popularRecipes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "resepId": {
+                                "type": "string"
+                              },
+                              "judul": {
+                                "type": "string"
+                              },
+                              "viewCount": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/report": {
+      "get": {
+        "tags": ["Report"],
+        "summary": "Mendapatkan semua laporan (Admin)",
+        "description": "Endpoint untuk admin mendapatkan semua laporan pengguna.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter berdasarkan status laporan",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "reviewed", "resolved", "rejected"],
+              "example": "pending"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar laporan berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan daftar laporan"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "reporter": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "nama": {
+                                "type": "string"
+                              },
+                              "email": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "reportedUser": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "nama": {
+                                "type": "string"
+                              },
+                              "email": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "reason": {
+                            "type": "string",
+                            "example": "Komentar mengandung spam"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["pending", "reviewed", "resolved", "rejected"],
+                            "example": "pending"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2025-10-18T10:30:00Z"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Report"],
+        "summary": "Melaporkan pengguna",
+        "description": "Endpoint untuk melaporkan pengguna yang melanggar aturan. Memerlukan autentikasi sebagai Anggota.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reportedUserId", "reason"],
+                "properties": {
+                  "reportedUserId": {
+                    "type": "integer",
+                    "example": 5
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 1000,
+                    "example": "Pengguna ini melakukan spam di komentar"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Laporan berhasil dibuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Laporan berhasil dibuat"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/report/{id}/ban": {
+      "post": {
+        "tags": ["Report"],
+        "summary": "Ban pengguna yang dilaporkan (Admin)",
+        "description": "Endpoint untuk admin melakukan ban terhadap pengguna yang dilaporkan dan mengubah status laporan menjadi resolved.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID laporan",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pengguna berhasil di-ban",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Pengguna berhasil di-ban"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/report/{id}/reject": {
+      "post": {
+        "tags": ["Report"],
+        "summary": "Menolak laporan (Admin)",
+        "description": "Endpoint untuk admin menolak laporan dan mengubah status menjadi rejected.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID laporan",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Laporan berhasil ditolak",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Laporan berhasil ditolak"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/artikel": {
+      "get": {
+        "tags": ["Artikel"],
+        "summary": "Mendapatkan daftar artikel",
+        "description": "Endpoint publik untuk mendapatkan daftar artikel edukatif. Mendukung pagination dan filter kategori.",
+        "parameters": [
+          {
+            "name": "kategori",
+            "in": "query",
+            "description": "Filter berdasarkan kategori artikel",
+            "schema": {
+              "type": "string",
+              "example": "Kesehatan"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Nomor halaman",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Jumlah item per halaman",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10,
+              "example": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar artikel berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan daftar artikel"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "judul": {
+                            "type": "string",
+                            "example": "Manfaat Jahe untuk Kesehatan"
+                          },
+                          "konten": {
+                            "type": "string",
+                            "example": "Jahe adalah rempah tradisional..."
+                          },
+                          "gambarURL": {
+                            "type": "string",
+                            "nullable": true,
+                            "example": "https://example.com/jahe.jpg"
+                          },
+                          "kategori": {
+                            "type": "string",
+                            "example": "Kesehatan"
+                          },
+                          "penulis": {
+                            "type": "string",
+                            "example": "Dr. Ahmad"
+                          },
+                          "tanggalPublikasi": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2025-10-01T10:00:00Z"
+                          },
+                          "views": {
+                            "type": "integer",
+                            "example": 150
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "total": {
+                          "type": "integer",
+                          "example": 25
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "example": 3
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Artikel"],
+        "summary": "Menambahkan artikel baru (Admin)",
+        "description": "Endpoint untuk admin menambahkan artikel edukatif baru.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["judul", "konten", "kategori", "penulis"],
+                "properties": {
+                  "judul": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 255,
+                    "example": "Manfaat Jahe untuk Kesehatan"
+                  },
+                  "konten": {
+                    "type": "string",
+                    "minLength": 50,
+                    "example": "Jahe adalah rempah tradisional yang memiliki banyak manfaat..."
+                  },
+                  "gambarURL": {
+                    "type": "string",
+                    "format": "uri",
+                    "nullable": true,
+                    "example": "https://example.com/jahe.jpg"
+                  },
+                  "kategori": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "Kesehatan"
+                  },
+                  "penulis": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "Dr. Ahmad"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Artikel berhasil dibuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Artikel berhasil dibuat"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/artikel/popular": {
+      "get": {
+        "tags": ["Artikel"],
+        "summary": "Mendapatkan artikel populer",
+        "description": "Endpoint publik untuk mendapatkan artikel dengan views tertinggi.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Jumlah artikel populer yang ditampilkan",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "default": 5,
+              "example": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artikel populer berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan artikel populer"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "judul": {
+                            "type": "string"
+                          },
+                          "gambarURL": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "kategori": {
+                            "type": "string"
+                          },
+                          "views": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/artikel/recent": {
+      "get": {
+        "tags": ["Artikel"],
+        "summary": "Mendapatkan artikel terbaru",
+        "description": "Endpoint publik untuk mendapatkan artikel terbaru berdasarkan tanggal publikasi.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Jumlah artikel terbaru yang ditampilkan",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "default": 5,
+              "example": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artikel terbaru berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan artikel terbaru"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "judul": {
+                            "type": "string"
+                          },
+                          "gambarURL": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "kategori": {
+                            "type": "string"
+                          },
+                          "tanggalPublikasi": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/artikel/categories": {
+      "get": {
+        "tags": ["Artikel"],
+        "summary": "Mendapatkan daftar kategori artikel",
+        "description": "Endpoint publik untuk mendapatkan daftar semua kategori artikel yang tersedia.",
+        "responses": {
+          "200": {
+            "description": "Daftar kategori berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan daftar kategori"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "Kesehatan"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/artikel/{id}": {
+      "get": {
+        "tags": ["Artikel"],
+        "summary": "Mendapatkan detail artikel",
+        "description": "Endpoint publik untuk mendapatkan detail lengkap artikel berdasarkan ID. Views akan bertambah setiap kali diakses.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID artikel",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail artikel berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Berhasil mendapatkan detail artikel"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "judul": {
+                          "type": "string",
+                          "example": "Manfaat Jahe untuk Kesehatan"
+                        },
+                        "konten": {
+                          "type": "string",
+                          "example": "Jahe adalah rempah tradisional..."
+                        },
+                        "gambarURL": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": "https://example.com/jahe.jpg"
+                        },
+                        "kategori": {
+                          "type": "string",
+                          "example": "Kesehatan"
+                        },
+                        "penulis": {
+                          "type": "string",
+                          "example": "Dr. Ahmad"
+                        },
+                        "tanggalPublikasi": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2025-10-01T10:00:00Z"
+                        },
+                        "views": {
+                          "type": "integer",
+                          "example": 150
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Artikel"],
+        "summary": "Memperbarui artikel (Admin)",
+        "description": "Endpoint untuk admin memperbarui artikel yang sudah ada.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID artikel",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                  "judul": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 255
+                  },
+                  "konten": {
+                    "type": "string",
+                    "minLength": 50
+                  },
+                  "gambarURL": {
+                    "type": "string",
+                    "format": "uri",
+                    "nullable": true
+                  },
+                  "kategori": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "penulis": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Artikel berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Artikel berhasil diperbarui"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Artikel"],
+        "summary": "Menghapus artikel (Admin)",
+        "description": "Endpoint untuk admin menghapus artikel dari sistem.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID artikel",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artikel berhasil dihapus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Artikel berhasil dihapus"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/upload/image": {
+      "post": {
+        "tags": ["Upload"],
+        "summary": "Upload single image (Admin)",
+        "description": "Endpoint untuk admin meng-upload satu gambar ke AWS S3.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["image", "folder"],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "byte",
+                    "description": "Base64 encoded image data",
+                    "example": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+                  },
+                  "folder": {
+                    "type": "string",
+                    "enum": ["resep", "artikel", "kategori"],
+                    "example": "resep"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gambar berhasil di-upload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Gambar berhasil di-upload"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string",
+                          "format": "uri",
+                          "example": "https://bucket.s3.region.amazonaws.com/resep/image-123.jpg"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/upload/images": {
+      "post": {
+        "tags": ["Upload"],
+        "summary": "Upload multiple images (Admin)",
+        "description": "Endpoint untuk admin meng-upload beberapa gambar sekaligus ke AWS S3.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["images", "folder"],
+                "properties": {
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "byte",
+                      "description": "Base64 encoded image data"
+                    },
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "example": ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...", "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD..."]
+                  },
+                  "folder": {
+                    "type": "string",
+                    "enum": ["resep", "artikel", "kategori"],
+                    "example": "resep"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gambar berhasil di-upload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Gambar berhasil di-upload"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "urls": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uri"
+                          },
+                          "example": ["https://bucket.s3.region.amazonaws.com/resep/image-123.jpg", "https://bucket.s3.region.amazonaws.com/resep/image-124.jpg"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    }
+  }
+}

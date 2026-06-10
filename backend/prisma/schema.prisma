@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  nama          String
+  email         String          @unique
+  password      String
+  role          UserRole        @default(anggota)
+  isBanned      Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  userToken     String?         @db.Text
+  komentar      Komentar[]
+  favorit       Favorit[]
+  recentSearch  RecentSearch[]
+  reportsCreated Report[]       @relation("ReporterReports")
+  reportsReceived Report[]      @relation("ReportedUserReports")
+
+  @@map("users")
+}
+
+model Kategori {
+  id     Int     @id @default(autoincrement())
+  nama   String  @unique
+  resep  Resep[]
+
+  @@map("kategori")
+}
+
+model Resep {
+  id                String     @id @default(uuid())
+  judul             String
+  deskripsi         String     @db.Text
+  gambarURL         String?
+  sumberLiteratur   String?    @db.Text
+  kategoriId        Int
+  bahan             String     @db.Text // JSON array stored as text
+  langkahPembuatan  String     @db.Text // JSON array stored as text
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  kategori          Kategori   @relation(fields: [kategoriId], references: [id])
+  komentar          Komentar[]
+  favorit           Favorit[]
+
+  @@index([kategoriId])
+  @@map("resep")
+}
+
+model Komentar {
+  id             Int      @id @default(autoincrement())
+  resepId        String
+  userId         Int
+  isiKomentar    String   @db.Text
+  rating         Int      // 1-5
+  tanggalPosting DateTime @default(now())
+  resep          Resep    @relation(fields: [resepId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([resepId])
+  @@index([userId])
+  @@map("komentar")
+}
+
+model Favorit {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  resepId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resep     Resep    @relation(fields: [resepId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resepId])
+  @@index([userId])
+  @@index([resepId])
+  @@map("favorit")
+}
+
+model RecentSearch {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  query       String   @db.VarChar(255)
+  resultCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("recent_search")
+}
+
+model AnalyticsEvent {
+  id         Int      @id @default(autoincrement())
+  eventType  String   @db.VarChar(50)  // 'page_view', 'search', 'recipe_view', 'category_view', etc.
+  eventData  String?  @db.Text         // JSON data
+  userId     Int?
+  sessionId  String?  @db.VarChar(255)
+  ipAddress  String?  @db.VarChar(45)
+  userAgent  String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([userId])
+  @@map("analytics_events")
+}
+
+enum UserRole {
+  anggota
+  admin
+
+  @@map("user_role")
+}
+
+model Report {
+  id              Int          @id @default(autoincrement())
+  reporterId      Int
+  reportedUserId  Int
+  reason          String       @db.Text
+  status          ReportStatus @default(pending)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  reporter        User         @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser    User         @relation("ReportedUserReports", fields: [reportedUserId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([status])
+  @@map("reports")
+}
+
+enum ReportStatus {
+  pending
+  reviewed
+  resolved
+  rejected
+}
+
+model Artikel {
+  id               Int      @id @default(autoincrement())
+  judul            String   @db.VarChar(255)
+  konten           String   @db.LongText
+  gambarURL        String?  @db.Text
+  kategori         String   @db.VarChar(100)
+  penulis          String   @db.VarChar(100)
+  tanggalPublikasi DateTime @default(now())
+  views            Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([kategori])
+  @@index([tanggalPublikasi])
+  @@map("artikel")
+}

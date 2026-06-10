@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #FFFD8F 0%, rgba(250,214,145,0.9) 100%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* FIXED: remove @theme, use normal CSS vars */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* Hero Animations */
+@keyframes heroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hero-animate {
+  animation-name: heroFadeUp;
+  animation-duration: 700ms;
+  animation-timing-function: cubic-bezier(.22,.9,.35,1);
+  animation-fill-mode: both;
+}
+
+.hero-image-animate {
+  animation-name: heroFadeUp;
+  animation-duration: 900ms;
+  animation-timing-function: cubic-bezier(.22,.9,.35,1);
+  animation-fill-mode: both;
+}
+
+.delay-150 { animation-delay: 150ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-450 { animation-delay: 450ms; }
+.delay-600 { animation-delay: 600ms; }
+
+.hero-init {
+  opacity: 0;
+  transform: translateY(12px) translateZ(0);
+}
